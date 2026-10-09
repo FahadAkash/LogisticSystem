@@ -19,8 +19,13 @@ if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS_PASSWORD")))
 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS_HOST")))
     redisConfig.Host = Environment.GetEnvironmentVariable("REDIS_HOST")!;
 
+var kafkaConfig = builder.Configuration.GetSection("Kafka").Get<KafkaConfig>() ?? new KafkaConfig();
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")))
+    kafkaConfig.BootstrapServers = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")!;
+
 builder.Services.AddSingleton(dbConfig);
 builder.Services.AddSingleton(redisConfig);
+builder.Services.AddSingleton(kafkaConfig);
 
 // Add services to the container.
 builder.Services.AddControllers();

@@ -28,3 +28,8 @@ public class RedisConfig
     }
 }
 
+public class KafkaConfig
+{
+    public string BootstrapServers { get; set; } = "127.0.0.1:9094";
+}
+

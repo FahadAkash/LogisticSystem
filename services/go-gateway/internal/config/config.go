@@ -7,16 +7,17 @@ import (
 )
 
 type Config struct {
-	Port             string
-	PostgresHost     string
-	PostgresPort     string
-	PostgresUser     string
-	PostgresPassword string
-	PostgresDB       string
-	PostgresSSLMode  string
-	RedisHost        string
-	RedisPort        string
-	RedisPassword    string
+	Port                  string
+	PostgresHost          string
+	PostgresPort          string
+	PostgresUser          string
+	PostgresPassword      string
+	PostgresDB            string
+	PostgresSSLMode       string
+	RedisHost             string
+	RedisPort             string
+	RedisPassword         string
+	KafkaBootstrapServers string
 }
 
 func getEnv(key, fallback string) string {
@@ -31,16 +32,17 @@ func Load(defaultPort string) Config {
 		defaultPort = "8083"
 	}
 	return Config{
-		Port:             getEnv("PORT", defaultPort),
-		PostgresHost:     getEnv("POSTGRES_HOST", "localhost"),
-		PostgresPort:     getEnv("POSTGRES_PORT", "5432"),
-		PostgresUser:     getEnv("POSTGRES_USER", "postgres"),
-		PostgresPassword: getEnv("POSTGRES_PASSWORD", "postgres_secure_pass"),
-		PostgresDB:       getEnv("POSTGRES_DB", "appdb"),
-		PostgresSSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
-		RedisHost:        getEnv("REDIS_HOST", "localhost"),
-		RedisPort:        getEnv("REDIS_PORT", "6379"),
-		RedisPassword:    getEnv("REDIS_PASSWORD", "redis_secure_pass"),
+		Port:                  getEnv("PORT", defaultPort),
+		PostgresHost:          getEnv("POSTGRES_HOST", "localhost"),
+		PostgresPort:          getEnv("POSTGRES_PORT", "5432"),
+		PostgresUser:          getEnv("POSTGRES_USER", "postgres"),
+		PostgresPassword:      getEnv("POSTGRES_PASSWORD", "postgres_secure_pass"),
+		PostgresDB:            getEnv("POSTGRES_DB", "appdb"),
+		PostgresSSLMode:       getEnv("POSTGRES_SSLMODE", "disable"),
+		RedisHost:             getEnv("REDIS_HOST", "localhost"),
+		RedisPort:             getEnv("REDIS_PORT", "6379"),
+		RedisPassword:         getEnv("REDIS_PASSWORD", "redis_secure_pass"),
+		KafkaBootstrapServers: getEnv("KAFKA_BOOTSTRAP_SERVERS", "127.0.0.1:9094"),
 	}
 }
 
@@ -62,12 +64,14 @@ func (c Config) RedisAddr() string {
 // SafeSummary returns non-sensitive fields for logging without leaking secrets
 func (c Config) SafeSummary() map[string]string {
 	return map[string]string{
-		"port":          c.Port,
-		"postgres_host": c.PostgresHost,
-		"postgres_port": c.PostgresPort,
-		"postgres_user": c.PostgresUser,
-		"postgres_db":   c.PostgresDB,
-		"redis_host":    c.RedisHost,
-		"redis_port":    c.RedisPort,
+		"port":                    c.Port,
+		"postgres_host":           c.PostgresHost,
+		"postgres_port":           c.PostgresPort,
+		"postgres_user":           c.PostgresUser,
+		"postgres_db":             c.PostgresDB,
+		"redis_host":              c.RedisHost,
+		"redis_port":              c.RedisPort,
+		"kafka_bootstrap_servers": c.KafkaBootstrapServers,
 	}
 }
+
