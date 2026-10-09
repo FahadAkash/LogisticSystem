@@ -44,17 +44,17 @@ func Load(defaultPort string) Config {
 	}
 	return Config{
 		Port:                  getEnv("PORT", defaultPort),
-		DatabaseURL:           getFirstEnv("postgresql://postgres:postgres_secure_pass@172.19.0.6:5432/appdb", "DATABASE_URL"),
-		PostgresHost:          getFirstEnv("172.19.0.6", "DB_HOST", "POSTGRES_HOST"),
+		DatabaseURL:           getFirstEnv("postgresql://postgres:postgres_secure_pass@192.168.0.113:5432/appdb", "DATABASE_URL"),
+		PostgresHost:          getFirstEnv("192.168.0.113", "DB_HOST", "POSTGRES_HOST"),
 		PostgresPort:          getFirstEnv("5432", "DB_PORT", "POSTGRES_PORT"),
 		PostgresUser:          getFirstEnv("postgres", "DB_USER", "POSTGRES_USER"),
 		PostgresPassword:      getFirstEnv("postgres_secure_pass", "DB_PASSWORD", "POSTGRES_PASSWORD"),
 		PostgresDB:            getFirstEnv("appdb", "DB_NAME", "POSTGRES_DB"),
 		PostgresSSLMode:       getFirstEnv("disable", "POSTGRES_SSLMODE"),
-		RedisHost:             getEnv("REDIS_HOST", "localhost"),
+		RedisHost:             getFirstEnv("192.168.0.113", "REDIS_HOST"),
 		RedisPort:             getEnv("REDIS_PORT", "6379"),
 		RedisPassword:         getEnv("REDIS_PASSWORD", "redis_secure_pass"),
-		KafkaBootstrapServers: getEnv("KAFKA_BOOTSTRAP_SERVERS", "127.0.0.1:9094"),
+		KafkaBootstrapServers: getEnv("KAFKA_BOOTSTRAP_SERVERS", "192.168.0.113:9094"),
 	}
 }
 
