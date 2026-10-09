@@ -29,7 +29,7 @@ func loadDotEnv() {
 	if err != nil {
 		return
 	}
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 8; i++ {
 		envPath := filepath.Join(dir, ".env")
 		if f, err := os.Open(envPath); err == nil {
 			defer f.Close()

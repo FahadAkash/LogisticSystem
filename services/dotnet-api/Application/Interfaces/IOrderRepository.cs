@@ -12,3 +12,4 @@ public interface IOrderRepository
     Task<bool> HasActiveOrderForCourierAsync(Guid courierId, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
+

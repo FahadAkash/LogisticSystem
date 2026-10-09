@@ -4,3 +4,4 @@ namespace LogisticServer.Infrastructure.Filters;
 public class RequireIdempotencyKeyAttribute : Attribute
 {
 }
+

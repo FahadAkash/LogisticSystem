@@ -8,3 +8,4 @@ public interface IIdempotencyRepository
     Task CreateOrUpdateAsync(IdempotencyKey keyRecord, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
+
