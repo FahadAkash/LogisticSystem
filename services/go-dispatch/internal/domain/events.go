@@ -53,3 +53,4 @@ type CourierStatusChangedEvent struct {
 	VehicleType string    `json:"vehicleType"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
+

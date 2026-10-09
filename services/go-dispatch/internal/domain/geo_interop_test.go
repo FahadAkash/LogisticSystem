@@ -145,3 +145,4 @@ func TestRedisCourierGeoAndState_AspNetCoreInterop(t *testing.T) {
 		}
 	}
 }
+

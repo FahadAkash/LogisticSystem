@@ -103,3 +103,4 @@ func TestValidateAndConsumeTicket_ExpiredRejection(t *testing.T) {
 		t.Fatalf("expected ErrTicketExpired, got: %v", err)
 	}
 }
+
