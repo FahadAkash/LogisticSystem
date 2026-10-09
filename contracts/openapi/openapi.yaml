@@ -1,0 +1,383 @@
+openapi: 3.1.0
+info:
+  title: Logistic Platform API
+  version: 1.0.0
+  description: Distributed Logistics & Dispatch Platform REST API
+servers:
+  - url: /api
+    description: Nginx routed API path
+paths:
+  /auth/register:
+    post:
+      summary: Register a new Customer or Courier
+      operationId: registerUser
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation failure or invalid payload
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Email or phone already registered
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /auth/login:
+    post:
+      summary: Authenticate user with credentials
+      operationId: loginUser
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid request payload
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Invalid email, password, or account suspended
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /auth/refresh:
+    post:
+      summary: Rotate and refresh access token using a refresh token
+      operationId: refreshToken
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed and rotated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid, expired, or revoked refresh token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /auth/logout:
+    post:
+      summary: Revoke refresh token and logout
+      operationId: logoutUser
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '204':
+          description: Logged out and refresh token revoked
+
+  /auth/me:
+    get:
+      summary: Get authenticated user profile and roles
+      operationId: getCurrentUser
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Unauthorized
+
+  /auth/ws-ticket:
+    post:
+      summary: Issue short-lived ticket for WebSocket gateway connection
+      operationId: getWebSocketTicket
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Short-lived WebSocket ticket issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebSocketTicketResponse'
+        '401':
+          description: Unauthorized
+
+  /auth/jwks:
+    get:
+      summary: JSON Web Key Set (JWKS) for asymmetric key token validation
+      operationId: getJwks
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: RFC 7517 JSON Web Key Set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonWebKeySet'
+
+  /admin/couriers/{id}/approve:
+    post:
+      summary: Admin approval for pending courier registration
+      operationId: approveCourier
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Courier approved and transitioned to Offline status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourierResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (Admin role required)
+        '404':
+          description: Courier not found
+        '409':
+          description: Courier is not in PendingApproval status
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - fullName
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [Customer, Courier]
+        vehicleType:
+          type: string
+          description: Required if role is Courier (e.g., Car, Bicycle, Motorcycle, Van)
+        plateNumber:
+          type: string
+          description: Required if role is Courier and vehicle is motorized
+        makeModel:
+          type: string
+        color:
+          type: string
+        year:
+          type: integer
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
+    AuthResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+        - tokenType
+        - expiresIn
+        - user
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          description: Token validity in seconds
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    UserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - fullName
+        - status
+        - roles
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        status:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CourierResponse:
+      type: object
+      required:
+        - id
+        - status
+        - rating
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        rating:
+          type: number
+        vehicleId:
+          type: string
+          format: uuid
+          nullable: true
+        vehicleType:
+          type: string
+          nullable: true
+        plateNumber:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    WebSocketTicketResponse:
+      type: object
+      required:
+        - ticket
+        - expiresIn
+        - expiresAt
+      properties:
+        ticket:
+          type: string
+        expiresIn:
+          type: integer
+        expiresAt:
+          type: string
+          format: date-time
+
+    JsonWebKeySet:
+      type: object
+      required:
+        - keys
+      properties:
+        keys:
+          type: array
+          items:
+            type: object
+
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        correlationId:
+          type: string

@@ -13,6 +13,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dotnet-worker", "dotnet-wor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogisticWorker", "services\dotnet-worker\LogisticWorker.csproj", "{1A108052-07CE-464A-9DC3-4D4472F60BD1}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogisticServer.Tests", "tests\LogisticServer.Tests\LogisticServer.Tests.csproj", "{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +51,18 @@ Global
 		{1A108052-07CE-464A-9DC3-4D4472F60BD1}.Release|x64.Build.0 = Release|Any CPU
 		{1A108052-07CE-464A-9DC3-4D4472F60BD1}.Release|x86.ActiveCfg = Release|Any CPU
 		{1A108052-07CE-464A-9DC3-4D4472F60BD1}.Release|x86.Build.0 = Release|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Debug|x64.Build.0 = Debug|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Debug|x86.Build.0 = Debug|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Release|x64.ActiveCfg = Release|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Release|x64.Build.0 = Release|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Release|x86.ActiveCfg = Release|Any CPU
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -56,5 +72,6 @@ Global
 		{6F909F4F-3C27-4298-AF12-F9653DCF72E1} = {DA057CC6-81F8-0E9F-C1FA-1C8BE2176704}
 		{DAA2AD0F-7298-8942-3674-A6D45E3E6B92} = {5854FF58-B8C5-05C6-5BF2-ACE42193F22B}
 		{1A108052-07CE-464A-9DC3-4D4472F60BD1} = {DAA2AD0F-7298-8942-3674-A6D45E3E6B92}
+		{95F08DE3-ECE1-4F1D-A696-597EF2BB6AE9} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

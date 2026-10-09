@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CourierRegisteredPayloadV1",
+  "type": "object",
+  "required": [
+    "courierId",
+    "fullName",
+    "email",
+    "vehicleType",
+    "status"
+  ],
+  "properties": {
+    "courierId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identifier of the courier (= core.couriers.id)"
+    },
+    "fullName": {
+      "type": "string",
+      "description": "Full name of the approved courier"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email address of the courier"
+    },
+    "phone": {
+      "type": ["string", "null"],
+      "description": "Phone number of the courier"
+    },
+    "vehicleId": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Assigned vehicle ID"
+    },
+    "vehicleType": {
+      "type": "string",
+      "description": "Type of vehicle (e.g., Car, Bicycle, Motorcycle, Van)"
+    },
+    "plateNumber": {
+      "type": ["string", "null"],
+      "description": "Vehicle license plate number"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Offline"],
+      "description": "Initial active status after admin approval"
+    }
+  },
+  "additionalProperties": false
+}

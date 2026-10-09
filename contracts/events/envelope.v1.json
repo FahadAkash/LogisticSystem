@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EventEnvelopeV1",
+  "type": "object",
+  "required": [
+    "eventId",
+    "eventType",
+    "version",
+    "occurredAt",
+    "correlationId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this event instance (UUID v4 or v7)"
+    },
+    "eventType": {
+      "type": "string",
+      "description": "Domain event type name (e.g., courier.registered, order.created)"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Schema version of the event payload"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp when the event occurred"
+    },
+    "correlationId": {
+      "type": "string",
+      "description": "Distributed tracing correlation identifier propagated across HTTP and Kafka headers"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific domain payload"
+    }
+  },
+  "additionalProperties": false
+}

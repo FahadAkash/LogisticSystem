@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WebSocketTicketV1",
+  "type": "object",
+  "required": [
+    "ticket",
+    "userId",
+    "roles",
+    "expiresAt"
+  ],
+  "properties": {
+    "ticket": {
+      "type": "string",
+      "description": "Cryptographically secure, single-use, short-lived token string for WebSocket handshake"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Authenticated user identifier"
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["Admin", "Dispatcher", "Courier", "Customer"]
+      },
+      "description": "Authorized roles of the user"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the ticket expires (TTL typically 60 seconds)"
+    }
+  },
+  "additionalProperties": false
+}

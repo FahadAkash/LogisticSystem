@@ -219,7 +219,29 @@ GRANT EXECUTE ON FUNCTION tracking.create_daily_partition(date) TO svc_tracking;
             await cmd.ExecuteNonQueryAsync();
         }
 
-        logger.LogInformation("All schemas and tables executed successfully.");
+        // Seed default admin account if not already present
+        var adminRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Admin");
+        if (adminRole != null)
+        {
+            var adminExists = await db.UserRoles.AnyAsync(ur => ur.RoleId == adminRole.Id);
+            if (!adminExists)
+            {
+                var adminUser = new Domain.Entities.User
+                {
+                    Id = Guid.NewGuid(),
+                    Email = "admin@logistic.local",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin1234!", 11),
+                    FullName = "Platform Administrator",
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                db.Users.Add(adminUser);
+                db.UserRoles.Add(new Domain.Entities.UserRole { UserId = adminUser.Id, RoleId = adminRole.Id });
+                await db.SaveChangesAsync();
+                logger.LogInformation("Seeded default platform admin: admin@logistic.local (password: Admin1234!)");
+            }
+        }
 
         // Verification & Reporting
         await VerifyDatabaseAsync(conn, logger);
@@ -271,3 +293,4 @@ GRANT EXECUTE ON FUNCTION tracking.create_daily_partition(date) TO svc_tracking;
         }
     }
 }
+

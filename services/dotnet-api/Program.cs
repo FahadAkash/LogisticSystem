@@ -1,10 +1,28 @@
+using System.Security.Claims;
+using System.Text.Json.Serialization;
+using LogisticServer.Application.Interfaces;
 using LogisticServer.Configuration;
 using LogisticServer.Infrastructure.Data;
+using LogisticServer.Infrastructure.Middleware;
+using LogisticServer.Infrastructure.Security;
+using LogisticServer.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using Serilog.Formatting.Compact;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Database & Redis settings from configuration and environment variables
+// Configure Serilog structured logging per Agent.md Rule 11.8 & 15.2
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Service", "dotnet-api")
+    .WriteTo.Console(new RenderedCompactJsonFormatter()));
+
+// Configure Database, Redis, Kafka, and JWT settings
 var dbConfig = builder.Configuration.GetSection("Postgres").Get<DatabaseConfig>() ?? new DatabaseConfig();
 var host = Environment.GetEnvironmentVariable("DB_HOST") ?? Environment.GetEnvironmentVariable("POSTGRES_HOST");
 if (!string.IsNullOrEmpty(host)) dbConfig.Host = host;
@@ -31,9 +49,28 @@ var kafkaConfig = builder.Configuration.GetSection("Kafka").Get<KafkaConfig>() ?
 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")))
     kafkaConfig.BootstrapServers = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")!;
 
+var jwtConfig = builder.Configuration.GetSection("Jwt").Get<JwtConfig>() ?? new JwtConfig();
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT_ISSUER")))
+    jwtConfig.Issuer = Environment.GetEnvironmentVariable("JWT_ISSUER")!;
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT_AUDIENCE")))
+    jwtConfig.Audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")!;
+if (int.TryParse(Environment.GetEnvironmentVariable("JWT_ACCESS_TOKEN_LIFETIME_MINUTES"), out var tokenMins))
+    jwtConfig.AccessTokenLifetimeMinutes = tokenMins;
+if (int.TryParse(Environment.GetEnvironmentVariable("JWT_REFRESH_TOKEN_LIFETIME_DAYS"), out var refreshDays))
+    jwtConfig.RefreshTokenLifetimeDays = refreshDays;
+if (int.TryParse(Environment.GetEnvironmentVariable("JWT_WS_TICKET_LIFETIME_SECONDS"), out var ticketSecs))
+    jwtConfig.WebSocketTicketLifetimeSeconds = ticketSecs;
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT_KEY_ID")))
+    jwtConfig.KeyId = Environment.GetEnvironmentVariable("JWT_KEY_ID")!;
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT_RSA_PRIVATE_KEY_PEM")))
+    jwtConfig.RsaPrivateKeyPem = Environment.GetEnvironmentVariable("JWT_RSA_PRIVATE_KEY_PEM")!;
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT_RSA_PUBLIC_KEY_PEM")))
+    jwtConfig.RsaPublicKeyPem = Environment.GetEnvironmentVariable("JWT_RSA_PUBLIC_KEY_PEM")!;
+
 builder.Services.AddSingleton(dbConfig);
 builder.Services.AddSingleton(redisConfig);
 builder.Services.AddSingleton(kafkaConfig);
+builder.Services.AddSingleton(jwtConfig);
 
 // Register CoreDbContext with PostgreSQL & NetTopologySuite (PostGIS)
 builder.Services.AddDbContext<CoreDbContext>(options =>
@@ -45,8 +82,77 @@ builder.Services.AddDbContext<CoreDbContext>(options =>
     });
 });
 
-// Add services to the container.
-builder.Services.AddControllers();
+// Register Security & Application services
+builder.Services.AddSingleton<IJwtKeyService, RsaKeyService>();
+builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICourierService, CourierService>();
+
+// Register Redis Connection Multiplexer
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    try
+    {
+        return ConnectionMultiplexer.Connect(redisConfig.BuildConnectionString());
+    }
+    catch (Exception ex)
+    {
+        var logger = sp.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning(ex, "Could not establish initial connection to Redis at {Host}:{Port}", redisConfig.Host, redisConfig.Port);
+        return ConnectionMultiplexer.Connect(redisConfig.BuildConnectionString());
+    }
+});
+builder.Services.AddScoped<IWebSocketTicketService, WebSocketTicketService>();
+
+// Configure Asymmetric JWT Authentication per Agent.md Rule 11.7
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer();
+
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IJwtKeyService, JwtConfig>((options, keyService, config) =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = keyService.GetPublicKey(),
+            ValidateIssuer = true,
+            ValidIssuer = config.Issuer,
+            ValidateAudience = true,
+            ValidAudience = config.Audience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.NameIdentifier
+        };
+    });
+
+// Configure Role Authorization Policies per Agent.md Rule 11.7
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdmin", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("RequireDispatcher", policy => policy.RequireRole("Dispatcher", "Admin"));
+    options.AddPolicy("RequireCourier", policy => policy.RequireRole("Courier"));
+    options.AddPolicy("RequireCustomer", policy => policy.RequireRole("Customer"));
+});
+
+// Configure Global Exception Handling per dotnet-webapi skill
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// Configure Controllers with string enum converters per dotnet-webapi skill
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
@@ -73,6 +179,11 @@ if (args.Contains("--migrate"))
     return;
 }
 
+// Global exception handling & diagnostics middleware
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -80,8 +191,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAngularDev");
-app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
@@ -89,3 +200,5 @@ app.MapHealthChecks("/ready");
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }
