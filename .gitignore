@@ -82,7 +82,10 @@ logs/
 !.vscode/extensions.json
 .idea/
 *.suo
-*.userprefs
-Thumbs.db
-[Dd]esktop.ini
 .DS_Store
+
+# ==========================================
+# Runner Runtime Session Files
+# ==========================================
+.services.json
+.services.pid
