@@ -1,0 +1,37 @@
+# .NET
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+
+# Node & Angular
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# IDE & OS
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+Thumbs.db
+[Dd]esktop.ini
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+# Environment & Secrets
+.env
+*.env
+!.env.example

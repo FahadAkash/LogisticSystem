@@ -1,0 +1,19 @@
+{
+  "/api": {
+    "target": "http://localhost:5229",
+    "secure": false
+  },
+  "/weatherforecast": {
+    "target": "http://localhost:5229",
+    "secure": false
+  },
+  "/health": {
+    "target": "http://localhost:5229",
+    "secure": false
+  },
+  "/ready": {
+    "target": "http://localhost:5229",
+    "secure": false
+  }
+}
+
