@@ -11,6 +11,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"go-eta/internal/config"
 )
 
 type HealthResponse struct {
@@ -63,7 +65,7 @@ func main() {
 		Level: slog.LevelInfo,
 	})).With("service", "go-eta")
 
-	cfg := LoadConfig()
+	cfg := config.Load("8084")
 	logger.Info("configuration loaded", slog.Any("config", cfg.SafeSummary()))
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

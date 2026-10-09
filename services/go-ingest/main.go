@@ -11,6 +11,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"go-ingest/internal/config"
 )
 
 type HealthResponse struct {
@@ -63,7 +65,7 @@ func main() {
 		Level: slog.LevelInfo,
 	})).With("service", "go-ingest")
 
-	cfg := LoadConfig()
+	cfg := config.Load("8081")
 	logger.Info("configuration loaded", slog.Any("config", cfg.SafeSummary()))
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

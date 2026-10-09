@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"fmt"
@@ -26,9 +26,12 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-func LoadConfig() Config {
+func Load(defaultPort string) Config {
+	if defaultPort == "" {
+		defaultPort = "8082"
+	}
 	return Config{
-		Port:             getEnv("PORT", "8083"),
+		Port:             getEnv("PORT", defaultPort),
 		PostgresHost:     getEnv("POSTGRES_HOST", "localhost"),
 		PostgresPort:     getEnv("POSTGRES_PORT", "5432"),
 		PostgresUser:     getEnv("POSTGRES_USER", "postgres"),
@@ -68,4 +71,3 @@ func (c Config) SafeSummary() map[string]string {
 		"redis_port":    c.RedisPort,
 	}
 }
-

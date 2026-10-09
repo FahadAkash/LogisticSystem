@@ -11,6 +11,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"go-dispatch/internal/config"
 )
 
 type HealthResponse struct {
@@ -63,7 +65,7 @@ func main() {
 		Level: slog.LevelInfo,
 	})).With("service", "go-dispatch")
 
-	cfg := LoadConfig()
+	cfg := config.Load("8082")
 	logger.Info("configuration loaded", slog.Any("config", cfg.SafeSummary()))
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
