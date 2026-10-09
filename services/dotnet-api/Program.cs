@@ -68,8 +68,8 @@ if (args.Contains("--migrate"))
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<CoreDbContext>();
-    await db.Database.MigrateAsync();
-    Console.WriteLine("Database migrations applied successfully.");
+    await DatabaseInitializer.MigrateAndInitializeAllAsync(db, app.Logger);
+    Console.WriteLine("All database migrations and schemas applied successfully.");
     return;
 }
 

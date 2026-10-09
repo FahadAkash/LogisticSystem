@@ -7,7 +7,7 @@ public class DatabaseConfig
     public string Database { get; set; } = "appdb";
     public string Username { get; set; } = "postgres";
     public string Password { get; set; } = "postgres_secure_pass";
-    public string SearchPath { get; set; } = "core";
+    public string SearchPath { get; set; } = "core,public";
 
     public string BuildConnectionString()
     {
