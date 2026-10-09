@@ -333,3 +333,4 @@ public class AuthIntegrationTests : IClassFixture<WebApplicationFactory<Program>
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 }
+

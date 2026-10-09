@@ -1,12 +1,50 @@
-# .NET
+# ==========================================
+# Environments & Secrets (CRITICAL)
+# ==========================================
+.env
+.env.*
+*.env
+!.env.example
+secrets/
+*.secret
+keys/
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+*.cer
+
+# ==========================================
+# .NET / C#
+# ==========================================
 bin/
 obj/
 *.user
 *.userosscache
 *.sln.docstates
 .vs/
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+coverage/
+*.cobertura.xml
+*.opencover.xml
 
-# Node & Angular
+# ==========================================
+# Go
+# ==========================================
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# ==========================================
+# Node / Angular
+# ==========================================
 node_modules/
 dist/
 .angular/
@@ -15,25 +53,36 @@ yarn-debug.log*
 yarn-error.log*
 .npm/
 
-# IDE & OS
+# ==========================================
+# Databases & Local Data
+# ==========================================
+*.db
+*.sqlite
+*.sqlite3
+*.rdb
+dump.rdb
+data/
+
+# ==========================================
+# Logs & Diagnostic Dumps
+# ==========================================
+logs/
+*.log
+*.log.*
+*.dmp
+*.crash
+
+# ==========================================
+# IDE & Operating System
+# ==========================================
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 .idea/
+*.suo
+*.userprefs
 Thumbs.db
 [Dd]esktop.ini
-# Go
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-# Environment & Secrets
-.env
-*.env
-!.env.example
-keys/
-*.pem
+.DS_Store

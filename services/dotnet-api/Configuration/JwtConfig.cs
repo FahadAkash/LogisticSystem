@@ -12,3 +12,4 @@ public class JwtConfig
     public string? RsaPublicKeyPem { get; set; }
     public string KeyDirectory { get; set; } = "keys";
 }
+

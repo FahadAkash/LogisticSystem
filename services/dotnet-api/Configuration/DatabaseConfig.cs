@@ -2,11 +2,11 @@ namespace LogisticServer.Configuration;
 
 public class DatabaseConfig
 {
-    public string Host { get; set; } = "192.168.0.113";
+    public string Host { get; set; } = "localhost";
     public int Port { get; set; } = 5432;
     public string Database { get; set; } = "appdb";
     public string Username { get; set; } = "postgres";
-    public string Password { get; set; } = "postgres_secure_pass";
+    public string Password { get; set; } = string.Empty;
     public string SearchPath { get; set; } = "core,public";
 
     public string BuildConnectionString()
@@ -17,9 +17,9 @@ public class DatabaseConfig
 
 public class RedisConfig
 {
-    public string Host { get; set; } = "192.168.0.113";
+    public string Host { get; set; } = "localhost";
     public int Port { get; set; } = 6379;
-    public string Password { get; set; } = "redis_secure_pass";
+    public string Password { get; set; } = string.Empty;
 
     public string BuildConnectionString()
     {
@@ -30,6 +30,5 @@ public class RedisConfig
 
 public class KafkaConfig
 {
-    public string BootstrapServers { get; set; } = "192.168.0.113:9094";
+    public string BootstrapServers { get; set; } = "localhost:9092";
 }
-

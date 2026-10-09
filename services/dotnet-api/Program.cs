@@ -13,6 +13,9 @@ using Serilog;
 using Serilog.Formatting.Compact;
 using StackExchange.Redis;
 
+// Load .env file securely from workspace root if present locally
+LoadDotEnv();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog structured logging per Agent.md Rule 11.8 & 15.2
@@ -200,5 +203,41 @@ app.MapHealthChecks("/ready");
 app.MapControllers();
 
 app.Run();
+
+static void LoadDotEnv()
+{
+    try
+    {
+        var current = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (current != null)
+        {
+            var envPath = Path.Combine(current.FullName, ".env");
+            if (File.Exists(envPath))
+            {
+                foreach (var line in File.ReadAllLines(envPath))
+                {
+                    var trimmed = line.Trim();
+                    if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith('#')) continue;
+                    var idx = trimmed.IndexOf('=');
+                    if (idx > 0)
+                    {
+                        var key = trimmed[..idx].Trim();
+                        var val = trimmed[(idx + 1)..].Trim();
+                        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key)))
+                        {
+                            Environment.SetEnvironmentVariable(key, val);
+                        }
+                    }
+                }
+                break;
+            }
+            current = current.Parent;
+        }
+    }
+    catch
+    {
+        // Ignore errors in environments where .env file is not present or inaccessible
+    }
+}
 
 public partial class Program { }
