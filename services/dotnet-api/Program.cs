@@ -1,4 +1,6 @@
 using LogisticServer.Configuration;
+using LogisticServer.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +29,16 @@ builder.Services.AddSingleton(dbConfig);
 builder.Services.AddSingleton(redisConfig);
 builder.Services.AddSingleton(kafkaConfig);
 
+// Register CoreDbContext with PostgreSQL & NetTopologySuite (PostGIS)
+builder.Services.AddDbContext<CoreDbContext>(options =>
+{
+    options.UseNpgsql(dbConfig.BuildConnectionString(), npgsqlOptions =>
+    {
+        npgsqlOptions.UseNetTopologySuite();
+        npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "core");
+    });
+});
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -44,6 +56,16 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Run migrations if --migrate flag is provided
+if (args.Contains("--migrate"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<CoreDbContext>();
+    await db.Database.MigrateAsync();
+    Console.WriteLine("Database migrations applied successfully.");
+    return;
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
