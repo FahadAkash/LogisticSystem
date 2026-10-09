@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OrderCreatedPayloadV1",
+  "type": "object",
+  "required": [
+    "orderId",
+    "orderNo",
+    "customerId",
+    "priority",
+    "pickupLatitude",
+    "pickupLongitude",
+    "pickupAddress",
+    "dropoffLatitude",
+    "dropoffLongitude",
+    "dropoffAddress",
+    "createdAt"
+  ],
+  "properties": {
+    "orderId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identifier of the order (= core.orders.id)"
+    },
+    "orderNo": {
+      "type": "string",
+      "description": "Human-readable order tracking number"
+    },
+    "customerId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identifier of the customer ordering the delivery"
+    },
+    "priority": {
+      "type": "integer",
+      "description": "Order priority level (default: 0)"
+    },
+    "vehicleType": {
+      "type": ["string", "null"],
+      "enum": ["Bike", "Car", "Van", "Truck", null],
+      "description": "Required vehicle type constraint"
+    },
+    "pickupLatitude": {
+      "type": "number",
+      "format": "double",
+      "description": "Latitude of the pickup stop"
+    },
+    "pickupLongitude": {
+      "type": "number",
+      "format": "double",
+      "description": "Longitude of the pickup stop"
+    },
+    "pickupAddress": {
+      "type": "string",
+      "description": "Human-readable address of the pickup stop"
+    },
+    "dropoffLatitude": {
+      "type": "number",
+      "format": "double",
+      "description": "Latitude of the primary dropoff stop"
+    },
+    "dropoffLongitude": {
+      "type": "number",
+      "format": "double",
+      "description": "Longitude of the primary dropoff stop"
+    },
+    "dropoffAddress": {
+      "type": "string",
+      "description": "Human-readable address of the dropoff stop"
+    },
+    "packageDescription": {
+      "type": ["string", "null"],
+      "description": "Description of package contents"
+    },
+    "packageWeight": {
+      "type": ["number", "null"],
+      "description": "Weight of package in kg"
+    },
+    "requestedPickupAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Optional scheduled pickup time"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the order was created"
+    }
+  },
+  "additionalProperties": false
+}

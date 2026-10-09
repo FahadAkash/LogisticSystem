@@ -3,7 +3,9 @@ using System.Text.Json.Serialization;
 using LogisticServer.Application.Interfaces;
 using LogisticServer.Configuration;
 using LogisticServer.Infrastructure.Data;
+using LogisticServer.Infrastructure.Filters;
 using LogisticServer.Infrastructure.Middleware;
+using LogisticServer.Infrastructure.Repositories;
 using LogisticServer.Infrastructure.Security;
 using LogisticServer.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -85,12 +87,18 @@ builder.Services.AddDbContext<CoreDbContext>(options =>
     });
 });
 
-// Register Security & Application services
+// Register Repositories, Security & Application services
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<ICourierRepository, CourierRepository>();
+builder.Services.AddScoped<IIdempotencyRepository, IdempotencyRepository>();
+
 builder.Services.AddSingleton<IJwtKeyService, RsaKeyService>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICourierService, CourierService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IdempotencyFilter>();
 
 // Register Redis Connection Multiplexer
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>

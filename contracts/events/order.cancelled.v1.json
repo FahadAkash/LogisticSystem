@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OrderCancelledPayloadV1",
+  "type": "object",
+  "required": [
+    "orderId",
+    "previousStatus",
+    "cancelledBy",
+    "occurredAt"
+  ],
+  "properties": {
+    "orderId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identifier of the cancelled order"
+    },
+    "previousStatus": {
+      "type": "string",
+      "description": "Status before cancellation was applied"
+    },
+    "reason": {
+      "type": ["string", "null"],
+      "description": "Cancellation rationale"
+    },
+    "cancelledBy": {
+      "type": "string",
+      "format": "uuid",
+      "description": "User ID of the actor initiating the cancellation"
+    },
+    "actorType": {
+      "type": "string",
+      "enum": ["Customer", "Dispatcher", "Admin", "System"],
+      "description": "Role of the user initiating cancellation"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when cancellation took place"
+    }
+  },
+  "additionalProperties": false
+}

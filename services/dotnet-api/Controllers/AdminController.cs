@@ -1,4 +1,5 @@
 using LogisticServer.Application.DTOs.Auth;
+using LogisticServer.Application.DTOs.Couriers;
 using LogisticServer.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -37,6 +38,19 @@ public class AdminController : ControllerBase
 
         var response = await _courierService.ApproveCourierAsync(id, correlationId, cancellationToken);
         return Ok(response);
+    }
+
+    /// <summary>
+    /// Lists all couriers awaiting administrator approval.
+    /// </summary>
+    [HttpGet("couriers/pending")]
+    [ProducesResponseType(typeof(IReadOnlyList<CourierDetailResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IReadOnlyList<CourierDetailResponse>>> GetPendingCouriers(CancellationToken cancellationToken)
+    {
+        var items = await _courierService.GetPendingCouriersAsync(cancellationToken);
+        return Ok(items);
     }
 }
 

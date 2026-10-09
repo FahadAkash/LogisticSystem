@@ -1,0 +1,253 @@
+### ==============================================================================
+### Distributed Logistics & Dispatch Platform - REST API Test Harness
+### Base URL: http://localhost:5229 or http://192.168.0.104:5229
+### ==============================================================================
+
+@baseUrl = http://localhost:5229
+
+### ------------------------------------------------------------------------------
+### 1. AUTHENTICATION & IDENTITY
+### ------------------------------------------------------------------------------
+
+### 1.1 Register Customer Account
+# @name registerCustomer
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "alice.customer@example.com",
+  "password": "CustomerSecurePass123!",
+  "fullName": "Alice Customer",
+  "phone": "+15551234567",
+  "role": "Customer"
+}
+
+### 1.2 Login Customer
+# @name loginCustomer
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice.customer@example.com",
+  "password": "CustomerSecurePass123!"
+}
+
+@customerToken = {{loginCustomer.response.body.accessToken}}
+
+### 1.3 Register Courier Account
+# @name registerCourier
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "bob.courier@example.com",
+  "password": "CourierSecurePass123!",
+  "fullName": "Bob Courier",
+  "phone": "+15559876543",
+  "role": "Courier",
+  "vehicleType": "Car",
+  "plateNumber": "NY-LOG-5421",
+  "makeModel": "Toyota Prius",
+  "color": "Silver",
+  "year": 2022
+}
+
+### 1.4 Login Admin (Seeded Admin credentials)
+# @name loginAdmin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@logistic.local",
+  "password": "Admin1234!"
+}
+
+@adminToken = {{loginAdmin.response.body.accessToken}}
+
+### 1.5 Login Courier
+# @name loginCourier
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "bob.courier@example.com",
+  "password": "CourierSecurePass123!"
+}
+
+@courierToken = {{loginCourier.response.body.accessToken}}
+
+### 1.6 Get Current User Profile
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{customerToken}}
+
+### 1.7 Issue Short-lived WebSocket Ticket for go-gateway
+POST {{baseUrl}}/api/auth/ws-ticket
+Authorization: Bearer {{customerToken}}
+
+### 1.8 Fetch RFC 7517 Public JWKS (Used by Go services for local JWT validation)
+GET {{baseUrl}}/.well-known/jwks.json
+
+### ------------------------------------------------------------------------------
+### 2. COURIER ADMINISTRATION & STATUS
+### ------------------------------------------------------------------------------
+
+### 2.1 Admin: List Pending Courier Applications
+# @name getPendingCouriers
+GET {{baseUrl}}/api/admin/couriers/pending
+Authorization: Bearer {{adminToken}}
+
+@pendingCourierId = {{getPendingCouriers.response.body[0].id}}
+
+### 2.2 Admin: Approve Courier Registration (Transitions to Offline, emits courier.registered)
+POST {{baseUrl}}/api/admin/couriers/{{pendingCourierId}}/approve
+Authorization: Bearer {{adminToken}}
+
+### 2.3 Courier: Get Own Profile
+GET {{baseUrl}}/api/couriers/me
+Authorization: Bearer {{courierToken}}
+
+### 2.4 Courier: Update Availability Status to 'Available' (Syncs Redis GEO set)
+PUT {{baseUrl}}/api/couriers/{{pendingCourierId}}/status
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "status": "Available"
+}
+
+### 2.5 Dispatcher / Admin: List Couriers (Paginated & Filtered)
+GET {{baseUrl}}/api/couriers?status=Available&page=1&pageSize=10
+Authorization: Bearer {{adminToken}}
+
+### 2.6 Get Courier Detail by ID
+GET {{baseUrl}}/api/couriers/{{pendingCourierId}}
+Authorization: Bearer {{adminToken}}
+
+### ------------------------------------------------------------------------------
+### 3. ORDERS LIFECYCLE (INTAKE, QUERY, TRANSITIONS, CANCELLATION)
+### ------------------------------------------------------------------------------
+
+### 3.1 Customer: Create Order with Idempotency-Key (Emits order.created outbox event)
+# @name createOrder
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{customerToken}}
+Idempotency-Key: idempotency-req-alpha-001
+Content-Type: application/json
+
+{
+  "priority": 1,
+  "vehicleType": "Car",
+  "packageDescription": "Electronics - Laptop and charger",
+  "packageWeight": 3.25,
+  "stops": [
+    {
+      "sequence": 1,
+      "type": "Pickup",
+      "address": "770 Broadway, New York, NY 10003",
+      "latitude": 40.7308,
+      "longitude": -73.9912,
+      "contactName": "Warehouse Depot A",
+      "contactPhone": "+15551112222"
+    },
+    {
+      "sequence": 2,
+      "type": "Dropoff",
+      "address": "350 5th Ave, New York, NY 10118",
+      "latitude": 40.7484,
+      "longitude": -73.9857,
+      "contactName": "Customer Front Desk",
+      "contactPhone": "+15553334444"
+    }
+  ]
+}
+
+@createdOrderId = {{createOrder.response.body.id}}
+
+### 3.2 Idempotency Test: Resend identical request (Assert: returns cached response without duplicate creation)
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{customerToken}}
+Idempotency-Key: idempotency-req-alpha-001
+Content-Type: application/json
+
+{
+  "priority": 1,
+  "vehicleType": "Car",
+  "packageDescription": "Electronics - Laptop and charger",
+  "packageWeight": 3.25,
+  "stops": [
+    {
+      "sequence": 1,
+      "type": "Pickup",
+      "address": "770 Broadway, New York, NY 10003",
+      "latitude": 40.7308,
+      "longitude": -73.9912,
+      "contactName": "Warehouse Depot A",
+      "contactPhone": "+15551112222"
+    },
+    {
+      "sequence": 2,
+      "type": "Dropoff",
+      "address": "350 5th Ave, New York, NY 10118",
+      "latitude": 40.7484,
+      "longitude": -73.9857,
+      "contactName": "Customer Front Desk",
+      "contactPhone": "+15553334444"
+    }
+  ]
+}
+
+### 3.3 Idempotency Conflict Test: Reuse same key with different body (Assert: 409 Conflict)
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{customerToken}}
+Idempotency-Key: idempotency-req-alpha-001
+Content-Type: application/json
+
+{
+  "priority": 5,
+  "vehicleType": "Truck",
+  "stops": [
+    {
+      "sequence": 1,
+      "type": "Pickup",
+      "address": "Different Address",
+      "latitude": 40.0,
+      "longitude": -73.0
+    },
+    {
+      "sequence": 2,
+      "type": "Dropoff",
+      "address": "Different Address 2",
+      "latitude": 40.1,
+      "longitude": -73.1
+    }
+  ]
+}
+
+### 3.4 Get Order Details by ID
+GET {{baseUrl}}/api/orders/{{createdOrderId}}
+Authorization: Bearer {{customerToken}}
+
+### 3.5 Customer: List Own Orders
+GET {{baseUrl}}/api/orders?page=1&pageSize=10
+Authorization: Bearer {{customerToken}}
+
+### 3.6 Dispatcher / Admin: List All Orders
+GET {{baseUrl}}/api/orders?status=Created&page=1&pageSize=20
+Authorization: Bearer {{adminToken}}
+
+### 3.7 Customer: Cancel Order before pickup (Emits order.cancelled outbox event)
+POST {{baseUrl}}/api/orders/{{createdOrderId}}/cancel
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "reason": "Change of schedule"
+}
+
+### 3.8 Courier: Pickup Order (Only valid if order status is 'Assigned')
+POST {{baseUrl}}/api/orders/{{createdOrderId}}/pickup
+Authorization: Bearer {{courierToken}}
+
+### 3.9 Courier: Deliver Order (Only valid if order status is 'PickedUp')
+POST {{baseUrl}}/api/orders/{{createdOrderId}}/deliver
+Authorization: Bearer {{courierToken}}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OrderStatusChangedPayloadV1",
+  "type": "object",
+  "required": [
+    "orderId",
+    "fromStatus",
+    "toStatus",
+    "occurredAt"
+  ],
+  "properties": {
+    "orderId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identifier of the order"
+    },
+    "fromStatus": {
+      "type": "string",
+      "description": "Previous order status"
+    },
+    "toStatus": {
+      "type": "string",
+      "description": "New order status"
+    },
+    "courierId": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Assigned courier ID if applicable"
+    },
+    "actorType": {
+      "type": "string",
+      "description": "Role of the actor who triggered the transition"
+    },
+    "actorId": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "ID of the actor who triggered the transition"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the status transition occurred"
+    }
+  },
+  "additionalProperties": false
+}

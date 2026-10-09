@@ -1,4 +1,6 @@
 using LogisticServer.Application.DTOs.Auth;
+using LogisticServer.Application.DTOs.Couriers;
+using LogisticServer.Application.DTOs.Orders;
 using LogisticServer.Domain.Entities;
 using Microsoft.IdentityModel.Tokens;
 
@@ -42,5 +44,10 @@ public interface IAuthService
 public interface ICourierService
 {
     Task<CourierResponse> ApproveCourierAsync(Guid courierId, string correlationId, CancellationToken cancellationToken = default);
+    Task<CourierDetailResponse> GetCourierByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<CourierDetailResponse> GetCourierByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<PagedResult<CourierDetailResponse>> GetCouriersAsync(CourierFilterQuery query, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<CourierDetailResponse>> GetPendingCouriersAsync(CancellationToken cancellationToken = default);
+    Task<CourierDetailResponse> UpdateStatusAsync(Guid courierId, Guid requesterUserId, IEnumerable<string> roles, string newStatus, string correlationId, CancellationToken cancellationToken = default);
 }
 
