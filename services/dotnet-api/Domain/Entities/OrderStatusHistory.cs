@@ -13,3 +13,4 @@ public class OrderStatusHistory
     public Guid? ActorId { get; set; }
     public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
 }
+

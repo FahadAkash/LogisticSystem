@@ -2,7 +2,7 @@ namespace LogisticServer.Configuration;
 
 public class DatabaseConfig
 {
-    public string Host { get; set; } = "localhost";
+    public string Host { get; set; } = "172.19.0.6";
     public int Port { get; set; } = 5432;
     public string Database { get; set; } = "appdb";
     public string Username { get; set; } = "postgres";

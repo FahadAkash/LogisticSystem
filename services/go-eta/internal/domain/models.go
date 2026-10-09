@@ -23,3 +23,4 @@ type ETAResponse struct {
 	DurationSeconds  int       `json:"duration_seconds"`
 	EstimatedArrival time.Time `json:"estimated_arrival"`
 }
+

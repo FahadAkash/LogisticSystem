@@ -30,3 +30,4 @@ public class Order
     public ICollection<OrderStatusHistory> StatusHistories { get; set; } = new List<OrderStatusHistory>();
     public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
 }
+

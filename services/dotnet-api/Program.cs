@@ -6,14 +6,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configure Database & Redis settings from configuration and environment variables
 var dbConfig = builder.Configuration.GetSection("Postgres").Get<DatabaseConfig>() ?? new DatabaseConfig();
-if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("POSTGRES_USER")))
-    dbConfig.Username = Environment.GetEnvironmentVariable("POSTGRES_USER")!;
-if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("POSTGRES_PASSWORD")))
-    dbConfig.Password = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD")!;
-if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("POSTGRES_DB")))
-    dbConfig.Database = Environment.GetEnvironmentVariable("POSTGRES_DB")!;
-if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("POSTGRES_HOST")))
-    dbConfig.Host = Environment.GetEnvironmentVariable("POSTGRES_HOST")!;
+var host = Environment.GetEnvironmentVariable("DB_HOST") ?? Environment.GetEnvironmentVariable("POSTGRES_HOST");
+if (!string.IsNullOrEmpty(host)) dbConfig.Host = host;
+
+var portStr = Environment.GetEnvironmentVariable("DB_PORT") ?? Environment.GetEnvironmentVariable("POSTGRES_PORT");
+if (!string.IsNullOrEmpty(portStr) && int.TryParse(portStr, out var p)) dbConfig.Port = p;
+
+var user = Environment.GetEnvironmentVariable("DB_USER") ?? Environment.GetEnvironmentVariable("POSTGRES_USER");
+if (!string.IsNullOrEmpty(user)) dbConfig.Username = user;
+
+var pass = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? Environment.GetEnvironmentVariable("POSTGRES_PASSWORD");
+if (!string.IsNullOrEmpty(pass)) dbConfig.Password = pass;
+
+var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? Environment.GetEnvironmentVariable("POSTGRES_DB");
+if (!string.IsNullOrEmpty(dbName)) dbConfig.Database = dbName;
 
 var redisConfig = builder.Configuration.GetSection("Redis").Get<RedisConfig>() ?? new RedisConfig();
 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS_PASSWORD")))

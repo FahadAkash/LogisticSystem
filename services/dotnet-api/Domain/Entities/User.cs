@@ -17,3 +17,4 @@ public class User
     public Customer? Customer { get; set; }
     public Courier? Courier { get; set; }
 }
+

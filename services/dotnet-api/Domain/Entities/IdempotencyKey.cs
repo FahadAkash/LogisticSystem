@@ -10,3 +10,4 @@ public class IdempotencyKey
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ExpiresAt { get; set; }
 }
+

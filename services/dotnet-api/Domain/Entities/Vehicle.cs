@@ -13,3 +13,4 @@ public class Vehicle
 
     public ICollection<Courier> Couriers { get; set; } = new List<Courier>();
 }
+

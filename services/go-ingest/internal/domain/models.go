@@ -46,3 +46,4 @@ type ProcessedEvent struct {
 	ConsumerName string    `json:"consumer_name" db:"consumer_name"`
 	ProcessedAt  time.Time `json:"processed_at" db:"processed_at"`
 }
+

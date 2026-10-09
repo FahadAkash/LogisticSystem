@@ -17,3 +17,4 @@ public class OrderStop
     public DateTime? ArrivedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
 }
+

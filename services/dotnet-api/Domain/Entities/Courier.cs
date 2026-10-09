@@ -21,3 +21,4 @@ public class Courier
     public ICollection<Order> AssignedOrders { get; set; } = new List<Order>();
     public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
 }
+

@@ -35,3 +35,4 @@ type OfferNotification struct {
 	ExpiresAt       time.Time `json:"expires_at"`
 	TTLSeconds      int       `json:"ttl_seconds"`
 }
+

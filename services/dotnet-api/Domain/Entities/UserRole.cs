@@ -8,3 +8,4 @@ public class UserRole
     public short RoleId { get; set; }
     public Role Role { get; set; } = null!;
 }
+

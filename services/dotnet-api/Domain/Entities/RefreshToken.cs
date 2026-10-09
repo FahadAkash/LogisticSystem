@@ -13,3 +13,4 @@ public class RefreshToken
     public RefreshToken? ReplacedByToken { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
+

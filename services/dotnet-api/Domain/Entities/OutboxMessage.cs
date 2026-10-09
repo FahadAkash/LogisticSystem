@@ -14,3 +14,4 @@ public class OutboxMessage
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? PublishedAt { get; set; }
 }
+
