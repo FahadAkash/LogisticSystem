@@ -40,3 +40,4 @@ export interface WebSocketTicketResponse {
   expiresIn: number;
   expiresAt: string;
 }
+

@@ -95,3 +95,4 @@ export interface OrderFilterQuery {
 export interface CancelOrderRequest {
   reason: string;
 }
+

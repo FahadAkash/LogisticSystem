@@ -45,3 +45,4 @@ export class CourierService {
     return this.http.post<CourierDetailResponse>(`/api/admin/couriers/${id}/approve`, {});
   }
 }
+

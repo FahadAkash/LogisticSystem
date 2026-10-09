@@ -93,3 +93,4 @@ export class StatusBadgeComponent {
     return `status-${s}`;
   }
 }
+

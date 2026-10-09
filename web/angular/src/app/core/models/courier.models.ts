@@ -40,3 +40,4 @@ export interface CourierFilterQuery {
 export interface UpdateCourierStatusRequest {
   status: 'Available' | 'Offline' | 'Busy';
 }
+

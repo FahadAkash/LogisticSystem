@@ -24,3 +24,4 @@ export interface OfferNotification {
   expires_at: string;
   ttl_seconds: number;
 }
+
