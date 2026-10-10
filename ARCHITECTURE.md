@@ -478,3 +478,4 @@ Total Automated Tests: 32 / 32 Passed (100%)
 | **PostgreSQL 16 + PostGIS** | TCP | `localhost:5432` | `192.168.0.113:5432` | PostgreSQL + PostGIS |
 | **Redis 7.x** | TCP | `localhost:6379` | `192.168.0.113:6379` | Redis In-Memory / Spatial |
 | **Apache Kafka** | TCP | `localhost:9094` | `192.168.0.113:9094` | Kafka Cluster |
+
