@@ -11,7 +11,7 @@ import (
 
 func TestIngestHealthEndpoints(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
-	router := newRouter(logger)
+	router := newRouter(logger, nil)
 
 	tests := []struct {
 		name           string

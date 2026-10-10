@@ -11,6 +11,7 @@ using LogisticServer.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Prometheus;
 using Serilog;
 using Serilog.Formatting.Compact;
 using StackExchange.Redis;
@@ -215,11 +216,22 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAngularDev");
 
+// Prometheus HTTP metrics instrumentation per Agent.md Rule 11.9 & 15.1
+app.UseHttpMetrics();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Health checks (both root and /api prefixes for direct and Nginx-routed traffic)
 app.MapHealthChecks("/health");
+app.MapHealthChecks("/api/health");
 app.MapHealthChecks("/ready");
+app.MapHealthChecks("/api/ready");
+
+// Prometheus scraping endpoints (root and /api prefixes)
+app.MapMetrics("/metrics");
+app.MapMetrics("/api/metrics");
+
 app.MapControllers();
 
 app.Run();

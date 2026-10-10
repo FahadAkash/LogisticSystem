@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 	"go-ingest/internal/config"
 )
@@ -37,7 +38,11 @@ type IngestPingRequest struct {
 func newRouter(logger *slog.Logger, rdb *redis.Client) http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+	// Prometheus metrics per Agent.md Rule 12.10 & 15.1
+	mux.Handle("GET /metrics", promhttp.Handler())
+	mux.Handle("GET /ingest/metrics", promhttp.Handler())
+
+	healthHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(HealthResponse{
@@ -45,9 +50,11 @@ func newRouter(logger *slog.Logger, rdb *redis.Client) http.Handler {
 			Service:   "go-ingest",
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
 		})
-	})
+	}
+	mux.HandleFunc("GET /health", healthHandler)
+	mux.HandleFunc("GET /ingest/health", healthHandler)
 
-	mux.HandleFunc("GET /ready", func(w http.ResponseWriter, r *http.Request) {
+	readyHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(HealthResponse{
@@ -55,9 +62,11 @@ func newRouter(logger *slog.Logger, rdb *redis.Client) http.Handler {
 			Service:   "go-ingest",
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
 		})
-	})
+	}
+	mux.HandleFunc("GET /ready", readyHandler)
+	mux.HandleFunc("GET /ingest/ready", readyHandler)
 
-	mux.HandleFunc("POST /api/v1/location", func(w http.ResponseWriter, r *http.Request) {
+	locationHandler := func(w http.ResponseWriter, r *http.Request) {
 		var ping IngestPingRequest
 		if err := json.NewDecoder(r.Body).Decode(&ping); err != nil {
 			http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
@@ -96,10 +105,15 @@ func newRouter(logger *slog.Logger, rdb *redis.Client) http.Handler {
 			"status":    "accepted",
 			"courierId": cID.String(),
 		})
-	})
+	}
+
+	mux.HandleFunc("POST /api/v1/location", locationHandler)
+	mux.HandleFunc("POST /location", locationHandler)
+	mux.HandleFunc("POST /ingest/api/v1/location", locationHandler)
+	mux.HandleFunc("POST /ingest/location", locationHandler)
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
+		if r.URL.Path != "/" && r.URL.Path != "/ingest" && r.URL.Path != "/ingest/" {
 			http.NotFound(w, r)
 			return
 		}

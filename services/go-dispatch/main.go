@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go-dispatch/internal/config"
 )
 
@@ -24,7 +25,11 @@ type HealthResponse struct {
 func newRouter(logger *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+	// Prometheus metrics per Agent.md Rule 12.10 & 15.1
+	mux.Handle("GET /metrics", promhttp.Handler())
+	mux.Handle("GET /dispatch/metrics", promhttp.Handler())
+
+	healthHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(HealthResponse{
@@ -32,9 +37,11 @@ func newRouter(logger *slog.Logger) http.Handler {
 			Service:   "go-dispatch",
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
 		})
-	})
+	}
+	mux.HandleFunc("GET /health", healthHandler)
+	mux.HandleFunc("GET /dispatch/health", healthHandler)
 
-	mux.HandleFunc("GET /ready", func(w http.ResponseWriter, r *http.Request) {
+	readyHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(HealthResponse{
@@ -42,7 +49,9 @@ func newRouter(logger *slog.Logger) http.Handler {
 			Service:   "go-dispatch",
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
 		})
-	})
+	}
+	mux.HandleFunc("GET /ready", readyHandler)
+	mux.HandleFunc("GET /dispatch/ready", readyHandler)
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {

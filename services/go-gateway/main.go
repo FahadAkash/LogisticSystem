@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 	"go-gateway/internal/auth"
 	"go-gateway/internal/config"
@@ -35,7 +36,11 @@ var upgrader = websocket.Upgrader{
 func newRouter(logger *slog.Logger, rdb *redis.Client) http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+	// Prometheus metrics per Agent.md Rule 12.10 & 15.1
+	mux.Handle("GET /metrics", promhttp.Handler())
+	mux.Handle("GET /ws/metrics", promhttp.Handler())
+
+	healthHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(HealthResponse{
@@ -43,9 +48,11 @@ func newRouter(logger *slog.Logger, rdb *redis.Client) http.Handler {
 			Service:   "go-gateway",
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
 		})
-	})
+	}
+	mux.HandleFunc("GET /health", healthHandler)
+	mux.HandleFunc("GET /ws/health", healthHandler)
 
-	mux.HandleFunc("GET /ready", func(w http.ResponseWriter, r *http.Request) {
+	readyHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(HealthResponse{
@@ -53,7 +60,9 @@ func newRouter(logger *slog.Logger, rdb *redis.Client) http.Handler {
 			Service:   "go-gateway",
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
 		})
-	})
+	}
+	mux.HandleFunc("GET /ready", readyHandler)
+	mux.HandleFunc("GET /ws/ready", readyHandler)
 
 	mux.HandleFunc("GET /ws", func(w http.ResponseWriter, r *http.Request) {
 		ticket := r.URL.Query().Get("ticket")

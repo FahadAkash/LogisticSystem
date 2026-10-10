@@ -95,12 +95,60 @@ func ParseFlags() *Config {
 
 	flag.Parse()
 
+	userSet := make(map[string]bool)
+	flag.Visit(func(f *flag.Flag) {
+		userSet[f.Name] = true
+	})
+
 	// Normalize URLs (remove trailing slashes)
 	cfg.TargetURL = strings.TrimRight(cfg.TargetURL, "/")
 	cfg.GoIngestURL = strings.TrimRight(cfg.GoIngestURL, "/")
 	cfg.GoGatewayURL = strings.TrimRight(cfg.GoGatewayURL, "/")
 	cfg.GoDispatchURL = strings.TrimRight(cfg.GoDispatchURL, "/")
 	cfg.GoEtaURL = strings.TrimRight(cfg.GoEtaURL, "/")
+
+	// If user specified custom -target, auto-align child service URLs unless explicitly provided
+	if userSet["target"] {
+		isProxy := !strings.Contains(cfg.TargetURL, ":5229") && !strings.Contains(cfg.TargetURL, ":5000")
+		if isProxy {
+			// Reverse proxy topology (e.g. Nginx on port 80/443 at 192.168.0.113)
+			if !userSet["ingest-url"] {
+				cfg.GoIngestURL = cfg.TargetURL + "/ingest"
+			}
+			if !userSet["gateway-url"] {
+				wsScheme := "ws://"
+				if strings.HasPrefix(cfg.TargetURL, "https://") {
+					wsScheme = "wss://"
+				}
+				cleanHost := strings.TrimPrefix(strings.TrimPrefix(cfg.TargetURL, "https://"), "http://")
+				cfg.GoGatewayURL = fmt.Sprintf("%s%s/ws", wsScheme, cleanHost)
+			}
+			if !userSet["dispatch-url"] {
+				cfg.GoDispatchURL = cfg.TargetURL + "/dispatch"
+			}
+			if !userSet["eta-url"] {
+				cfg.GoEtaURL = cfg.TargetURL + "/eta"
+			}
+		} else {
+			// Direct port topology (e.g. standalone dev host)
+			cleanHost := strings.TrimPrefix(strings.TrimPrefix(cfg.TargetURL, "https://"), "http://")
+			if idx := strings.Index(cleanHost, ":"); idx > 0 {
+				cleanHost = cleanHost[:idx]
+			}
+			if !userSet["ingest-url"] {
+				cfg.GoIngestURL = fmt.Sprintf("http://%s:8081", cleanHost)
+			}
+			if !userSet["gateway-url"] {
+				cfg.GoGatewayURL = fmt.Sprintf("ws://%s:8083", cleanHost)
+			}
+			if !userSet["dispatch-url"] {
+				cfg.GoDispatchURL = fmt.Sprintf("http://%s:8082", cleanHost)
+			}
+			if !userSet["eta-url"] {
+				cfg.GoEtaURL = fmt.Sprintf("http://%s:8084", cleanHost)
+			}
+		}
+	}
 
 	return cfg
 }
