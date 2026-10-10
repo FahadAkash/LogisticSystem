@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  # =========================================================================
+  # PostgreSQL 16 with PostGIS Spatial Extension
+  # Persistent Named Volume ensures zero data loss across reboots and restarts
+  # =========================================================================
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: logistic-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-appdb}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_pass}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persistent host volume: Data survives container removal, updates, and OS reboots
+      - postgres_data:/var/lib/postgresql/data
+      # Initial schema applied automatically on first-time volume creation
+      - ./infra/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-appdb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # =========================================================================
+  # Redis 7 with Append-Only File (AOF) Persistence
+  # =========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: logistic-redis
+    restart: always
+    command: >
+      redis-server 
+      --requirepass ${REDIS_PASSWORD:-redis_secure_pass} 
+      --appendonly yes 
+      --appendfsync everysec
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_secure_pass}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+volumes:
+  postgres_data:
+    name: logistic_postgres_data
+  redis_data:
+    name: logistic_redis_data
