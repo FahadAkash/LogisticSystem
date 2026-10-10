@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"load-tester/pkg/client"
 	"load-tester/pkg/config"
 	"load-tester/pkg/metrics"
+
 )
 
 // RunSmoke executes a complete end-to-end sanity verification across all services.
@@ -71,11 +73,12 @@ func RunSmoke(ctx context.Context, cfg *config.Config, target *client.TargetClie
 
 	// 5. Customer Registration
 	custEmail := fmt.Sprintf("smoke_cust_%s@test.local", uuid.New().String()[:8])
+	custPhone := fmt.Sprintf("+1555%07d", rand.Intn(9000000)+1000000)
 	custReq, _ := json.Marshal(map[string]interface{}{
 		"email":       custEmail,
 		"password":    "Password123!",
 		"fullName":    "Smoke Test Customer",
-		"phone":       "+1555" + uuid.New().String()[:7],
+		"phone":       custPhone,
 		"role":        "Customer",
 	})
 	res, _ = target.Do(ctx, "POST", "/api/auth/register", custReq, nil, "")
@@ -86,17 +89,19 @@ func RunSmoke(ctx context.Context, cfg *config.Config, target *client.TargetClie
 
 	// 6. Courier Registration
 	courierEmail := fmt.Sprintf("smoke_courier_%s@test.local", uuid.New().String()[:8])
+	courierPhone := fmt.Sprintf("+1444%07d", rand.Intn(9000000)+1000000)
 	courierReq, _ := json.Marshal(map[string]interface{}{
 		"email":       courierEmail,
 		"password":    "Password123!",
 		"fullName":    "Smoke Test Courier",
-		"phone":       "+1444" + uuid.New().String()[:7],
+		"phone":       courierPhone,
 		"role":        "Courier",
 		"vehicleType": "Bike",
 	})
 	res, _ = target.Do(ctx, "POST", "/api/auth/register", courierReq, nil, "")
 	col.Record(res)
 	logStep("Courier Registration (Pending Approval)", res.StatusCode == http.StatusCreated || res.StatusCode == http.StatusOK, res.StatusCode, res.Duration, res.Err)
+
 
 	// 7. Admin List Pending Couriers
 	res, pendingData := target.Do(ctx, "GET", "/api/admin/couriers/pending", nil, nil, token)
@@ -122,7 +127,7 @@ func RunSmoke(ctx context.Context, cfg *config.Config, target *client.TargetClie
 		"packageWeight":      2.5,
 		"stops": []map[string]interface{}{
 			{
-				"stopType":       "Pickup",
+				"type":           "Pickup",
 				"sequence":       1,
 				"address":        "100 Innovation Way",
 				"contactName":    "Alice Sender",
@@ -131,7 +136,7 @@ func RunSmoke(ctx context.Context, cfg *config.Config, target *client.TargetClie
 				"longitude":      -74.0060,
 			},
 			{
-				"stopType":       "Dropoff",
+				"type":           "Dropoff",
 				"sequence":       2,
 				"address":        "200 Market Street",
 				"contactName":    "Bob Receiver",
@@ -140,6 +145,7 @@ func RunSmoke(ctx context.Context, cfg *config.Config, target *client.TargetClie
 				"longitude":      -73.9352,
 			},
 		},
+
 	})
 
 	orderHeaders := map[string]string{

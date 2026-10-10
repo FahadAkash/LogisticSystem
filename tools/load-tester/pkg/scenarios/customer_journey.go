@@ -57,7 +57,7 @@ func RunCustomerJourney(ctx context.Context, cfg *config.Config, target *client.
 					"packageWeight":      1.5 + r.Float64()*5.0,
 					"stops": []map[string]interface{}{
 						{
-							"stopType":       "Pickup",
+							"type":           "Pickup",
 							"sequence":       1,
 							"address":        fmt.Sprintf("%d Broad St", r.Intn(500)),
 							"contactName":    "Sender Test",
@@ -66,7 +66,7 @@ func RunCustomerJourney(ctx context.Context, cfg *config.Config, target *client.
 							"longitude":      pickupLon,
 						},
 						{
-							"stopType":       "Dropoff",
+							"type":           "Dropoff",
 							"sequence":       2,
 							"address":        fmt.Sprintf("%d 5th Ave", r.Intn(500)),
 							"contactName":    "Receiver Test",
@@ -75,6 +75,7 @@ func RunCustomerJourney(ctx context.Context, cfg *config.Config, target *client.
 							"longitude":      dropoffLon,
 						},
 					},
+
 				})
 
 				headers := map[string]string{

@@ -12,6 +12,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
+	"go-gateway/internal/auth"
 	"go-gateway/internal/config"
 )
 
@@ -21,7 +24,15 @@ type HealthResponse struct {
 	Timestamp string `json:"timestamp"`
 }
 
-func newRouter(logger *slog.Logger) http.Handler {
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Allow all origins for dev/load testing
+	},
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+func newRouter(logger *slog.Logger, rdb *redis.Client) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +53,64 @@ func newRouter(logger *slog.Logger) http.Handler {
 			Service:   "go-gateway",
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
 		})
+	})
+
+	mux.HandleFunc("GET /ws", func(w http.ResponseWriter, r *http.Request) {
+		ticket := r.URL.Query().Get("ticket")
+		if ticket == "" {
+			http.Error(w, `{"error":"ticket query parameter required"}`, http.StatusUnauthorized)
+			return
+		}
+
+		if rdb == nil {
+			http.Error(w, `{"error":"redis connection unavailable"}`, http.StatusServiceUnavailable)
+			return
+		}
+
+		// Consume and validate ticket atomically
+		payload, err := auth.ValidateAndConsumeTicket(r.Context(), rdb, ticket)
+		if err != nil {
+			logger.Warn("invalid or expired websocket ticket", slog.String("error", err.Error()), slog.String("ticket", ticket))
+			http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusUnauthorized)
+			return
+		}
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			logger.Error("failed to upgrade websocket connection", slog.String("error", err.Error()))
+			return
+		}
+		defer conn.Close()
+
+		logger.Info("websocket client connected", slog.String("userId", payload.UserID.String()))
+
+		// Send initial welcome frame
+		welcome := map[string]interface{}{
+			"event":     "connected",
+			"userId":    payload.UserID.String(),
+			"roles":     payload.Roles,
+			"timestamp": time.Now().UTC(),
+		}
+		if err := conn.WriteJSON(welcome); err != nil {
+			return
+		}
+
+		// Keep connection open and read messages/pings
+		for {
+			msgType, msg, err := conn.ReadMessage()
+			if err != nil {
+				break
+			}
+			if msgType == websocket.PingMessage {
+				_ = conn.WriteMessage(websocket.PongMessage, []byte("pong"))
+			} else if msgType == websocket.TextMessage {
+				// Echo or acknowledge
+				_ = conn.WriteJSON(map[string]interface{}{
+					"event": "ack",
+					"size":  len(msg),
+				})
+			}
+		}
 	})
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -68,15 +137,26 @@ func main() {
 	cfg := config.Load("8083")
 	logger.Info("configuration loaded", slog.Any("config", cfg.SafeSummary()))
 
+	var rdb *redis.Client
+	if cfg.RedisHost != "" {
+		redisAddr := fmt.Sprintf("%s:%s", cfg.RedisHost, cfg.RedisPort)
+		rdb = redis.NewClient(&redis.Options{
+			Addr:     redisAddr,
+			Password: cfg.RedisPassword,
+			DB:       0,
+		})
+		logger.Info("connected to redis", slog.String("addr", redisAddr))
+	}
+
 	addr := fmt.Sprintf(":%s", cfg.Port)
 
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           newRouter(logger),
+		Handler:           newRouter(logger, rdb),
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       30 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	serverErrors := make(chan error, 1)
@@ -104,7 +184,9 @@ func main() {
 			logger.Error("graceful shutdown failed, forcing close", slog.String("error", err.Error()))
 			_ = server.Close()
 		}
+		if rdb != nil {
+			_ = rdb.Close()
+		}
 		logger.Info("server stopped gracefully")
 	}
 }
-
