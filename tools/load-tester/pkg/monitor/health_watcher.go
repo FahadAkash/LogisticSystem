@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
+
 
 // ServiceHealth tracks health state of an individual microservice.
 type ServiceHealth struct {
@@ -30,19 +32,24 @@ type Watchdog struct {
 }
 
 // NewWatchdog creates an initialized health monitoring probe.
-func NewWatchdog(targetURL, ingestURL, gatewayURL string, activeVUFunc func() int) *Watchdog {
+func NewWatchdog(targetURL, ingestURL, gatewayURL, dispatchURL, etaURL string, activeVUFunc func() int) *Watchdog {
 	client := &http.Client{
 		Timeout: 3 * time.Second,
 	}
+
+	// gateway HTTP health URL is derived from gatewayURL (replace ws:// with http://)
+	gatewayHttp := strings.Replace(gatewayURL, "ws://", "http://", 1)
+	gatewayHttp = strings.Replace(gatewayHttp, "wss://", "https://", 1)
 
 	services := []*ServiceHealth{
 		{Name: "ASP.NET Core API", URL: targetURL + "/health", Status: "UNKNOWN"},
 		{Name: "Identity / JWKS", URL: targetURL + "/api/auth/jwks", Status: "UNKNOWN"},
 		{Name: "Go Location Ingest", URL: ingestURL + "/health", Status: "UNKNOWN"},
-		{Name: "Go Dispatch Engine", URL: "http://localhost:8082/health", Status: "UNKNOWN"},
-		{Name: "Go Realtime Gateway", URL: "http://localhost:8083/health", Status: "UNKNOWN"},
-		{Name: "Go ETA Engine", URL: "http://localhost:8084/health", Status: "UNKNOWN"},
+		{Name: "Go Dispatch Engine", URL: dispatchURL + "/health", Status: "UNKNOWN"},
+		{Name: "Go Realtime Gateway", URL: gatewayHttp + "/health", Status: "UNKNOWN"},
+		{Name: "Go ETA Engine", URL: etaURL + "/health", Status: "UNKNOWN"},
 	}
+
 
 	return &Watchdog{
 		services:     services,

@@ -48,9 +48,10 @@ func main() {
 	collector := metrics.NewCollector(cfg.TargetURL, cfg.Mode)
 
 	// Start health watchdog
-	watchdog := monitor.NewWatchdog(cfg.TargetURL, cfg.GoIngestURL, cfg.GoGatewayURL, collector.GetActiveVUs)
+	watchdog := monitor.NewWatchdog(cfg.TargetURL, cfg.GoIngestURL, cfg.GoGatewayURL, cfg.GoDispatchURL, cfg.GoEtaURL, collector.GetActiveVUs)
 	watchdog.Start()
 	defer watchdog.Stop()
+
 
 	// Start live console reporter
 	consoleRep := reporter.NewConsoleReporter(collector, watchdog)

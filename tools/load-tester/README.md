@@ -88,3 +88,4 @@ The engine monitors:
 - **HTTP 429**: Rate limiting throttles.
 - **Connection Refused / Timeouts**: ASP.NET thread pool exhaustion or TCP accept backlog saturation.
 - **Independent Watchdog**: Probes `/health` on all services every second to pinpoint the exact service that went down and the concurrent user count when it occurred.
+

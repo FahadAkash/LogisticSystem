@@ -194,20 +194,27 @@ func RunSmoke(ctx context.Context, cfg *config.Config, target *client.TargetClie
 	col.Record(res)
 	logStep("Go Ingest Service Health (:8081)", res.StatusCode == http.StatusOK, res.StatusCode, res.Duration, res.Err)
 
-	dispatchClient := client.NewTargetClient("http://localhost:8082", 3*time.Second)
+	dispatchClient := client.NewTargetClient(cfg.GoDispatchURL, 3*time.Second)
 	res, _ = dispatchClient.Do(ctx, "GET", "/health", nil, nil, "")
 	col.Record(res)
 	logStep("Go Dispatch Engine Health (:8082)", res.StatusCode == http.StatusOK, res.StatusCode, res.Duration, res.Err)
 
-	gatewayClient := client.NewTargetClient("http://localhost:8083", 3*time.Second)
+	gatewayHttp := cfg.GoGatewayURL
+	if len(gatewayHttp) >= 5 && gatewayHttp[:5] == "ws://" {
+		gatewayHttp = "http://" + gatewayHttp[5:]
+	} else if len(gatewayHttp) >= 6 && gatewayHttp[:6] == "wss://" {
+		gatewayHttp = "https://" + gatewayHttp[6:]
+	}
+	gatewayClient := client.NewTargetClient(gatewayHttp, 3*time.Second)
 	res, _ = gatewayClient.Do(ctx, "GET", "/health", nil, nil, "")
 	col.Record(res)
 	logStep("Go Gateway Health (:8083)", res.StatusCode == http.StatusOK, res.StatusCode, res.Duration, res.Err)
 
-	etaClient := client.NewTargetClient("http://localhost:8084", 3*time.Second)
+	etaClient := client.NewTargetClient(cfg.GoEtaURL, 3*time.Second)
 	res, _ = etaClient.Do(ctx, "GET", "/health", nil, nil, "")
 	col.Record(res)
 	logStep("Go ETA Calculation Engine Health (:8084)", res.StatusCode == http.StatusOK, res.StatusCode, res.Duration, res.Err)
+
 
 	fmt.Println("================================================================================")
 	fmt.Println("   SMOKE TEST COMPLETE: All Core Services & Endpoints Verified")

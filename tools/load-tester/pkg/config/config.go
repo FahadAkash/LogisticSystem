@@ -2,15 +2,20 @@ package config
 
 import (
 	"flag"
+	"fmt"
+	"net"
 	"strings"
 	"time"
 )
 
 // Config holds all parameters for executing benchmarks and stress tests.
 type Config struct {
+	LANIP           string
 	TargetURL       string
 	GoIngestURL     string
 	GoGatewayURL    string
+	GoDispatchURL   string
+	GoEtaURL        string
 	Mode            string
 	VUs             int
 	MaxVUs          int
@@ -27,13 +32,52 @@ type Config struct {
 	Verbose         bool
 }
 
+// DetectLANIP discovers the primary non-loopback IPv4 network interface on the local machine.
+func DetectLANIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err == nil {
+		// Prefer 192.168.* LAN address
+		for _, addr := range addrs {
+			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+				if ip4 := ipnet.IP.To4(); ip4 != nil {
+					ipStr := ip4.String()
+					if strings.HasPrefix(ipStr, "192.168.") {
+						return ipStr
+					}
+				}
+			}
+		}
+		// Fallback to any non-loopback IPv4 address
+		for _, addr := range addrs {
+			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+				if ip4 := ipnet.IP.To4(); ip4 != nil {
+					ipStr := ip4.String()
+					if !strings.HasPrefix(ipStr, "169.254.") {
+						return ipStr
+					}
+				}
+			}
+		}
+	}
+	return "127.0.0.1"
+}
+
 // ParseFlags parses command line arguments and populates Config with sane defaults.
 func ParseFlags() *Config {
 	cfg := &Config{}
 
-	flag.StringVar(&cfg.TargetURL, "target", "http://localhost:5229", "Base target URL (e.g. http://localhost:5229 or http://192.168.0.104:5229)")
-	flag.StringVar(&cfg.GoIngestURL, "ingest-url", "http://localhost:8081", "Base URL for Go Ingest service (direct or proxied)")
-	flag.StringVar(&cfg.GoGatewayURL, "gateway-url", "ws://localhost:8083", "WebSocket URL for Go Gateway")
+	cfg.LANIP = DetectLANIP()
+	defaultTarget := fmt.Sprintf("http://%s:5229", cfg.LANIP)
+	defaultIngest := fmt.Sprintf("http://%s:8081", cfg.LANIP)
+	defaultGateway := fmt.Sprintf("ws://%s:8083", cfg.LANIP)
+	defaultDispatch := fmt.Sprintf("http://%s:8082", cfg.LANIP)
+	defaultEta := fmt.Sprintf("http://%s:8084", cfg.LANIP)
+
+	flag.StringVar(&cfg.TargetURL, "target", defaultTarget, "Base target URL (LAN IP default: "+defaultTarget+")")
+	flag.StringVar(&cfg.GoIngestURL, "ingest-url", defaultIngest, "Base URL for Go Ingest service (LAN IP default: "+defaultIngest+")")
+	flag.StringVar(&cfg.GoGatewayURL, "gateway-url", defaultGateway, "WebSocket URL for Go Gateway (LAN IP default: "+defaultGateway+")")
+	flag.StringVar(&cfg.GoDispatchURL, "dispatch-url", defaultDispatch, "Base URL for Go Dispatch service (LAN IP default: "+defaultDispatch+")")
+	flag.StringVar(&cfg.GoEtaURL, "eta-url", defaultEta, "Base URL for Go ETA service (LAN IP default: "+defaultEta+")")
 	flag.StringVar(&cfg.Mode, "mode", "smoke", "Test mode: smoke, load, stress, spike, ws, journey, all")
 	flag.IntVar(&cfg.VUs, "users", 50, "Number of concurrent Virtual Users (VUs)")
 	flag.IntVar(&cfg.MaxVUs, "max-users", 1500, "Maximum concurrent VUs for stepped stress test")
@@ -51,10 +95,12 @@ func ParseFlags() *Config {
 
 	flag.Parse()
 
-	// Normalize target URL (remove trailing slash)
+	// Normalize URLs (remove trailing slashes)
 	cfg.TargetURL = strings.TrimRight(cfg.TargetURL, "/")
 	cfg.GoIngestURL = strings.TrimRight(cfg.GoIngestURL, "/")
 	cfg.GoGatewayURL = strings.TrimRight(cfg.GoGatewayURL, "/")
+	cfg.GoDispatchURL = strings.TrimRight(cfg.GoDispatchURL, "/")
+	cfg.GoEtaURL = strings.TrimRight(cfg.GoEtaURL, "/")
 
 	return cfg
 }
