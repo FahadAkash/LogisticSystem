@@ -8,10 +8,13 @@ public class DatabaseConfig
     public string Username { get; set; } = "postgres";
     public string Password { get; set; } = string.Empty;
     public string SearchPath { get; set; } = "core,public";
+    public int MaxPoolSize { get; set; } = 80;
+    public int MinPoolSize { get; set; } = 10;
+    public int ConnectionTimeoutSeconds { get; set; } = 15;
 
     public string BuildConnectionString()
     {
-        return $"Host={Host};Port={Port};Database={Database};Username={Username};Password={Password};SearchPath={SearchPath};";
+        return $"Host={Host};Port={Port};Database={Database};Username={Username};Password={Password};SearchPath={SearchPath};Pooling=true;Maximum Pool Size={MaxPoolSize};Minimum Pool Size={MinPoolSize};Timeout={ConnectionTimeoutSeconds};Connection Idle Lifetime=30;Connection Pruning Interval=10;";
     }
 }
 

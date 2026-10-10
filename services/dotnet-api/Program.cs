@@ -21,6 +21,15 @@ LoadDotEnv();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel high-concurrency connection limits per Agent.md Rule 1.16 & 17.5
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxConcurrentConnections = 30000;
+    options.Limits.MaxConcurrentUpgradedConnections = 15000;
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(30);
+});
+
 // Configure Serilog structured logging per Agent.md Rule 11.8 & 15.2
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
@@ -44,6 +53,9 @@ if (!string.IsNullOrEmpty(pass)) dbConfig.Password = pass;
 
 var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? Environment.GetEnvironmentVariable("POSTGRES_DB");
 if (!string.IsNullOrEmpty(dbName)) dbConfig.Database = dbName;
+
+if (int.TryParse(Environment.GetEnvironmentVariable("DB_MAX_POOL_SIZE"), out var poolSize))
+    dbConfig.MaxPoolSize = poolSize;
 
 var redisConfig = builder.Configuration.GetSection("Redis").Get<RedisConfig>() ?? new RedisConfig();
 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REDIS_PASSWORD")))
@@ -85,6 +97,10 @@ builder.Services.AddDbContext<CoreDbContext>(options =>
     {
         npgsqlOptions.UseNetTopologySuite();
         npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "core");
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(2),
+            errorCodesToAdd: null);
     });
 });
 
